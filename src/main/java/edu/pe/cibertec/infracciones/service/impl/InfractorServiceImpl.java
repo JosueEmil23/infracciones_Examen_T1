@@ -69,6 +69,29 @@ public class InfractorServiceImpl implements IInfractorService {
         return totalPendientes + totalVencidas;
     }
 
+    @Override
+    public void desasignarVehiculo(Long infractorId, Long vehiculoId){
+        Infractor infractor = infractorRepository.findById(infractorId).orElseThrow(
+                () -> new InfractorNotFoundException(infractorId)
+        );
+
+        boolean tienePendientes = multaRepository
+                .existsByVehiculo_IdAndInfractor_IdAndEstado(vehiculoId, infractorId, EstadoMulta.PENDIENTE);
+
+        if (tienePendientes){
+            throw new RuntimeException(
+                    "Este vehiculo no se puede desasignar"
+            );
+        }
+
+        infractor.getVehiculos().removeIf(v -> v.getId().equals(vehiculoId));
+        infractorRepository.save(infractor);
+    }
+
+
+
+
+
 
     private InfractorResponseDTO mapToResponse(Infractor infractor) {
         InfractorResponseDTO dto = new InfractorResponseDTO();
