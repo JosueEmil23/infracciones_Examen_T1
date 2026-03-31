@@ -4,9 +4,12 @@ import edu.pe.cibertec.infracciones.dto.InfractorRequestDTO;
 import edu.pe.cibertec.infracciones.dto.InfractorResponseDTO;
 import edu.pe.cibertec.infracciones.exception.InfractorNotFoundException;
 import edu.pe.cibertec.infracciones.exception.VehiculoNotFoundException;
+import edu.pe.cibertec.infracciones.model.EstadoMulta;
 import edu.pe.cibertec.infracciones.model.Infractor;
+import edu.pe.cibertec.infracciones.model.Multa;
 import edu.pe.cibertec.infracciones.model.Vehiculo;
 import edu.pe.cibertec.infracciones.repository.InfractorRepository;
+import edu.pe.cibertec.infracciones.repository.MultaRepository;
 import edu.pe.cibertec.infracciones.repository.VehiculoRepository;
 import edu.pe.cibertec.infracciones.service.IInfractorService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,7 @@ public class InfractorServiceImpl implements IInfractorService {
 
     private final InfractorRepository infractorRepository;
     private final VehiculoRepository vehiculoRepository;
+    private final MultaRepository multaRepository;
 
     @Override
     public InfractorResponseDTO registrarInfractor(InfractorRequestDTO dto) {
@@ -54,6 +58,15 @@ public class InfractorServiceImpl implements IInfractorService {
                 .orElseThrow(() -> new VehiculoNotFoundException(vehiculoId));
         infractor.getVehiculos().add(vehiculo);
         infractorRepository.save(infractor);
+    }
+
+    @Override
+    public Double calcuDeuda(Long infractorId){
+        List<Multa> pendientes = multaRepository.findByInfractor_IdAndEstado(infractorId, EstadoMulta.PENDIENTE);
+        List<Multa> vencida = multaRepository.findByInfractor_IdAndEstado(infractorId, EstadoMulta.VENCIDA);
+        double totalPendientes = pendientes.stream().mapToDouble(Multa::getMonto).sum();
+        double totalVencidas = vencida.stream().mapToDouble(m -> m.getMonto() * 1.15).sum();
+        return totalPendientes + totalVencidas;
     }
 
 
